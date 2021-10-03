@@ -11,8 +11,8 @@ import plotly.express as px
 
 app = dash.Dash(__name__)
 
-S1_PATH = os.path.join("..","Data","DOE_Q1","S1","data_cleaned", "data.csv")
-S2_PATH = os.path.join("..","Data","DOE_Q1","S2","data_cleaned", "data.csv")
+S1_PATH = os.path.join("..","data","S1","data_cleaned", "data.csv")
+S2_PATH = os.path.join("..","data","S2","data_cleaned", "data.csv")
 
 
 
