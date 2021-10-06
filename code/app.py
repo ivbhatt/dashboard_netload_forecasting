@@ -3,6 +3,7 @@ from dash.dcc.Checklist import Checklist
 from dash.dependencies import Input, Output
 
 import numpy as np
+from numpy.lib.npyio import load
 import pandas as pd
 
 import dash
@@ -26,9 +27,10 @@ if len(datasets) != 8:
 print_info("Datasets:", datasets)
 
 
-dataFrame = pd.DataFrame(columns=["Dataset", "Location", "Year", "Month", "Day", "Weekday", "Hour","Demand"])
 
-for dataset in datasets:
+def load_dataset(dataset):
+    dataFrame = pd.DataFrame(columns=["Dataset", "Location", "Year", "Month", "Day", "Weekday", "Hour","Demand"])
+
     for root, dirs, files in os.walk(os.path.join(DATA_PATH, dataset, "data_cleaned")):
         print_info("Working on dataset:", dataset)
         if "Date.csv" in files:
@@ -80,10 +82,13 @@ for dataset in datasets:
             temp_df["Year"] = "1"
 
             dataFrame = pd.concat([dataFrame, temp_df])
+    return dataFrame
 
-# print(dataFrame.groupby(["Dataset", "Location", "Year"]).size())
+dataFrames = {}
+for dataset in datasets:
+    dataFrames[dataset] = load_dataset(dataset)
 
-
+dataFrame = dataFrames["S1"]
 
 hour_demand = px.box(dataFrame[["Hour", "Demand", "Weekday"]], y = "Demand", x = "Hour", color = "Weekday")
 month_demand = px.box(dataFrame[["Month", "Demand",  "Weekday"]], y = "Demand", x = "Month", color = "Weekday")
@@ -93,6 +98,7 @@ heatmap = px.imshow(np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].mean
 
 app.layout = html.Div(children=[
     html.H1(id = "heading", children="Solar power dashboard"),
+    html.P(id ="active_dataset", children="S1"),
     dcc.RadioItems(id = "data_selector", options = [
         {"label":"S1", "value":"S1"},
         {"label":"S2", "value":"S2"},
@@ -111,52 +117,57 @@ app.layout = html.Div(children=[
 ])
 
 @app.callback(
-    Output(component_id="hour_demand", component_property="figure"),
+    Output(component_id="active_dataset", component_property="children"),
     Input(component_id="data_selector", component_property="value"))
+def load_new_datasset(selected_dataset):
+    global dataFrame
+    dataFrame = dataFrames[selected_dataset]
+    return selected_dataset
+
+@app.callback(
+    Output(component_id="hour_demand", component_property="figure"),
+    Input(component_id="active_dataset", component_property="children"))
 def update_dataset(selected_dataset):
-    filtered_dataFrame = dataFrame[dataFrame.Dataset == selected_dataset]
+    # filtered_dataFrame = load_dataset(selected_dataset)
 
-    hour_demand = px.box(filtered_dataFrame[["Hour", "Demand", "Weekday"]], y = "Demand", x = "Hour", color = "Weekday")
+    hour_demand = px.box(dataFrame[["Hour", "Demand", "Weekday"]], y = "Demand", x = "Hour", color = "Weekday")
 
-    hour_demand.update_layout(transition_duration = 500)
+    hour_demand.update_layout()
 
     return hour_demand
 
 
 @app.callback(
     Output(component_id="month_demand", component_property="figure"),
-    Input(component_id="data_selector", component_property="value"))
+    Input(component_id="active_dataset", component_property="children"))
 def update_dataset(selected_dataset):
-    filtered_dataFrame = dataFrame[dataFrame.Dataset == selected_dataset]
+    # filtered_dataFrame = load_dataset(selected_dataset)
 
-    month_demand = px.box(filtered_dataFrame[["Month", "Demand", "Weekday"]], y = "Demand", x = "Month", color = "Weekday")
+    month_demand = px.box(dataFrame[["Month", "Demand", "Weekday"]], y = "Demand", x = "Month", color = "Weekday")
 
-    month_demand.update_layout(transition_duration = 500)
+    month_demand.update_layout()
 
     return month_demand
 
 @app.callback(
     Output(component_id="year_demand", component_property="figure"),
-    Input(component_id="data_selector", component_property="value"))
+    Input(component_id="active_dataset", component_property="children"))
 def update_dataset(selected_dataset):
-    filtered_dataFrame = dataFrame[dataFrame.Dataset == selected_dataset]
-
-    year_demand = px.box(filtered_dataFrame[["Year", "Demand", "Weekday"]], y = "Demand", x = "Year", color = "Weekday")
-
-    year_demand.update_layout(transition_duration = 500)
+    # filtered_dataFrame = load_dataset(selected_dataset)
+    year_demand = px.box(dataFrame[["Year", "Demand", "Weekday"]], y = "Demand", x = "Year", color = "Weekday")
+    year_demand.update_layout()
 
     return year_demand
 
 @app.callback(
     Output(component_id="heatmap", component_property="figure"),
-    Input(component_id="data_selector", component_property="value"))
+    Input(component_id="active_dataset", component_property="children"))
 def update_dataset(selected_dataset):
-    filtered_dataFrame = dataFrame[dataFrame.Dataset == selected_dataset]
 
-    heatmap = px.imshow(np.array(filtered_dataFrame.groupby(["Month", "Hour"])["Demand"].mean()).reshape(12, 24), color_continuous_scale="icefire")
+    heatmap = px.imshow(np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].mean()).reshape(12, 24), color_continuous_scale="icefire")
 
 
-    heatmap.update_layout(transition_duration = 500)
+    heatmap.update_layout()
 
     return heatmap
 
