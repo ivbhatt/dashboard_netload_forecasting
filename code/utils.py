@@ -37,3 +37,10 @@ def print_info(*args, **kwargs):
 @warn
 def print_warn(*args, **kwargs):
     print(*args, **kwargs)
+
+def convert_to_message(status):
+    result = "Dataset Selected:" + str(status["dataset"]) + "<br>"
+    result +="Locations Selected:" + ",".join(status["locations"]) + "<br>"
+    result +="Years Selected:" + ",".join(status["years"]) + "<br>"
+    
+    return result
