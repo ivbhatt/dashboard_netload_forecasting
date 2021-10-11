@@ -381,10 +381,10 @@ def update_dataset(selected_dataset):
             a = dataFrame.loc[dataFrame.Location.isin([locations[i]])].sort_values(by = ["Year", "Month", "Day", "Hour"])["Demand"]
             b = dataFrame.loc[dataFrame.Location.isin([locations[j]])].sort_values(by = ["Year", "Month", "Day", "Hour"])["Demand"]
             
-            corrs[i][j] = np.correlate(a, b)[0]
+            corrs[i][j] = np.corrcoef(a, b)[0, 1]
             corrs[j][i] = corrs[i][j]
 
-    location_correlation = px.imshow(corrs, color_continuous_scale="icefire")
+    location_correlation = px.imshow(corrs)
     return location_correlation
 
 
@@ -399,10 +399,17 @@ def update_dataset(selected_dataset):
 
     
     for i in range(len(locations)):
-        a = dataFrame.loc[dataFrame.Location.isin([locations[i]])].sort_values(by = ["Year", "Month", "Day", "Hour"])["Demand"]
-            
-        corrs[i] = np.correlate(a, a, mode = "full")[:50]
-        temp = temp.add_trace(go.Scatter(y = corrs[i], x = [i for i in range(50)],
+        a = dataFrame.loc[dataFrame.Location.isin([locations[i]])].sort_values(by = ["Year", "Month", "Day", "Hour"])
+        
+        a = a["Demand"]
+        # a = a[:8736]
+        # corrs[i] = np.correlate(a, a, mode = "full")[len(a)//2:len(a)//2 + 24]
+        corrs[i] = np.correlate(a, a, mode = "full")[-24*8:]
+        
+        corrs[i] /= max(corrs[i])
+        
+        
+        temp = temp.add_trace(go.Scatter(y = corrs[i], x = [i for i in range(24*8)],
             mode = "lines+markers", name = locations[i]))
 
     return temp
