@@ -15,7 +15,7 @@ from pandas.core.frame import DataFrame
 import plotly.graph_objects as go
 import plotly.express as px
 
-from utils import print_info, print_warn, convert_to_message
+from utils import print_info, print_warn, convert_to_message, normalize
 
 current_selection = {
     "dataset" : "S1",
@@ -91,6 +91,7 @@ def load_dataset(dataset):
     return dataFrame
 
 dataFrames = {}
+# for dataset in ["S1", "S4"]:
 for dataset in datasets:
     dataFrames[dataset] = load_dataset(dataset)
 
@@ -144,8 +145,9 @@ year_demand.update_layout(boxmode="group")
 ##
 
 # heatmaps
-month_hour_heatmap = px.imshow(np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].median()).reshape(12,24), color_continuous_scale="icefire")
-location_correlation = px.imshow(np.array([1]).reshape(1,1), color_continuous_scale="icefire")
+month_hour_heatmap_data = np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].median()).reshape(12,24)
+month_hour_heatmap = px.imshow(normalize(month_hour_heatmap_data), color_continuous_scale="Bluered")
+location_correlation = px.imshow(np.array([1]).reshape(1,1), color_continuous_scale="Bluered")
 
 ## line chart
 autocorrelation = go.Figure()
@@ -208,26 +210,22 @@ def load_new_datasset(selected_dataset, selected_locations, selected_years):
     # update active_dataset hence triggerring graph updates
 
     if current_selection["dataset"] != selected_dataset:
-    # if True:
-      
-        current_selection["dataset"] = selected_dataset
-        current_selection["locations"] = ["ALL"]
-        current_selection["years"] = ["ALL"]
         
-
         dataFrame = dataFrames[selected_dataset]
 
-        returnLocations = [{"label":"ALL", "value":"ALL"}]
-        for location in dataFrame.Location.unique():
-            if location != "ALL":
-                returnLocations.append({"label":location, "value":location})
-        returnLocation = ["ALL"]
+        current_selection["dataset"] = selected_dataset
+        current_selection["locations"] = [i for i in dataFrame.Location.unique()]
+        current_selection["years"] = [i for i in dataFrame.Year.unique()]
 
-        returnYears = [{"label":"ALL", "value":"ALL"}]
-        for year in dataFrame.Year.unique():
-            if year != "ALL":
-                returnYears.append({"label":year, "value":year})
-        returnYear = ["ALL"]
+        returnLocations = []
+        for location in current_selection["locations"]:
+            returnLocations.append({"label":location, "value":location})
+        returnLocation = current_selection["locations"]
+
+        returnYears = []
+        for year in current_selection["years"]:
+            returnYears.append({"label":year, "value":year})
+        returnYear = current_selection["years"]
 
         return {
             "location_selector_options": returnLocations,
@@ -237,35 +235,28 @@ def load_new_datasset(selected_dataset, selected_locations, selected_years):
             "active_dataset": convert_to_message(current_selection)
         }
     else:
-        returnLocations = [{"label":"ALL", "value":"ALL"}]
-        for location in dataFrame.Location.unique():
-            if location != "ALL":
-                returnLocations.append({"label":location, "value":location})
+        returnLocations = []
+        for location in dataFrames[current_selection["dataset"]].Location.unique():
+            returnLocations.append({"label":location, "value":location})
 
-        returnYears = [{"label":"ALL", "value":"ALL"}]
-        for year in dataFrame.Year.unique():
-            if year != "ALL":
-                returnYears.append({"label":year, "value":year})
+        returnYears = []
+        for year in dataFrames[current_selection["dataset"]].Year.unique():
+            returnYears.append({"label":year, "value":year})
 
         current_selection["locations"] = selected_locations
         current_selection["years"] = selected_years
 
-        if len(selected_locations) > 1 and "ALL" in selected_locations:
-            current_selection["locations"].remove("ALL")             
-        if len(selected_years) > 1 and "ALL" in selected_years:
-            current_selection["years"].remove("ALL")
-        
 
         print(current_selection)
         print(dataFrame.head())
-        dataFrame = dataFrames[current_selection["dataset"]]
-        if "ALL" not in current_selection["years"]:
-            dataFrame = dataFrame.loc[dataFrame.Year.isin(current_selection["years"])]
-        if "ALL" not in current_selection["locations"]:
-            dataFrame = dataFrame.loc[dataFrame.Location.isin(current_selection["locations"])]
-        print(dataFrame.shape)
 
+        dataFrame = dataFrames[current_selection["dataset"]]
+        print(dataFrame.shape)
         
+        dataFrame = dataFrame.loc[dataFrame.Year.isin(current_selection["years"])]
+        dataFrame = dataFrame.loc[dataFrame.Location.isin(current_selection["locations"])]
+        
+        print(dataFrame.shape)
         
         return {
             "location_selector_options": returnLocations,
@@ -275,13 +266,7 @@ def load_new_datasset(selected_dataset, selected_locations, selected_years):
             "active_dataset": convert_to_message(current_selection)
         }
 
-                    
-
-
     
-
-
-
     # dataFrame = dataFrames[selected_dataset]
 
     # current_selection["dataset"] = selected_dataset
@@ -292,12 +277,7 @@ def load_new_datasset(selected_dataset, selected_locations, selected_years):
 
     # print(current_selection)
 
-    
-
-
-
     return current_selection
-
 
 
 @app.callback(
@@ -361,7 +341,8 @@ def update_dataset(selected_dataset):
     Output(component_id="month_hour_heatmap", component_property="figure"),
     Input(component_id="active_dataset", component_property="children"))
 def update_dataset(selected_dataset):
-    month_hour_heatmap = px.imshow(np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].median()).reshape(12,24), color_continuous_scale="icefire")
+    month_hour_heatmap_data = np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].median()).reshape(12,24)
+    month_hour_heatmap = px.imshow(normalize(month_hour_heatmap_data), color_continuous_scale="Bluered")
     month_hour_heatmap.update_layout()
     return month_hour_heatmap
 
@@ -384,7 +365,7 @@ def update_dataset(selected_dataset):
             corrs[i][j] = np.corrcoef(a, b)[0, 1]
             corrs[j][i] = corrs[i][j]
 
-    location_correlation = px.imshow(corrs)
+    location_correlation = px.imshow(corrs, color_continuous_scale="Bluered")
     return location_correlation
 
 

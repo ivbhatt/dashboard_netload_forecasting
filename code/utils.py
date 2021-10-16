@@ -1,3 +1,4 @@
+import numpy as np
 
 class bcolors:
     HEADER = '\033[95m'
@@ -41,6 +42,11 @@ def print_warn(*args, **kwargs):
 def convert_to_message(status):
     result = "Dataset Selected:" + str(status["dataset"]) + "<br>"
     result +="Locations Selected:" + ",".join(status["locations"]) + "<br>"
-    result +="Years Selected:" + ",".join(status["years"]) + "<br>"
+    result +="Years Selected:" + ",".join([str(i) for i in status["years"]]) + "<br>"
     
     return result
+
+def normalize(arr):
+    zero_one = (arr - np.min(arr)) / (np.max(arr) - np.min(arr))
+    return zero_one*2 -1
+
