@@ -1,7 +1,7 @@
 import os, sys
 from dash.dcc.Checklist import Checklist
 from dash.dcc.RadioItems import RadioItems
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash.html.Label import Label
 
 import numpy as np
@@ -35,7 +35,7 @@ print_info("Datasets:", datasets)
 
 
 def load_dataset(dataset):
-    dataFrame = pd.DataFrame(columns=["Dataset", "Location", "Year", "Month", "Day", "Weekday", "Hour","Demand"])
+    dataFrame = pd.DataFrame(columns=["Dataset", "Location", "Year", "Month", "Day", "Weekday", "Hour","Demand", "Temperature"])
 
     for root, dirs, files in os.walk(os.path.join(DATA_PATH, dataset, "data_cleaned")):
         print_info("Working on dataset:", dataset)
@@ -77,12 +77,13 @@ def load_dataset(dataset):
                     temp_df["Day"] = date["Day"]
                     temp_df["Hour"] = date["Hour"]
                     temp_df["Weekday"] = date["Weekday"]
-                        
+                    temp_df["Temperature"] = t["Temperature"]
+                    
 
                     dataFrame = pd.concat([dataFrame, temp_df])
 
         else:
-            temp_df = pd.read_csv(os.path.join(root, files[0]))[["Month","Day","Weekday","Hour","Demand"]]
+            temp_df = pd.read_csv(os.path.join(root, files[0]))[["Month","Day","Weekday","Hour","Demand", "Temperature"]]
             temp_df["Dataset"] = dataset
             temp_df["Location"] = "ALL"
             temp_df["Year"] = "ALL"
@@ -91,8 +92,8 @@ def load_dataset(dataset):
     return dataFrame
 
 dataFrames = {}
-# for dataset in ["S1", "S4"]:
-for dataset in datasets:
+for dataset in ["S1", "S4"]:
+# for dataset in datasets:
     dataFrames[dataset] = load_dataset(dataset)
 
 
@@ -152,6 +153,9 @@ location_correlation = px.imshow(np.array([1]).reshape(1,1), color_continuous_sc
 ## line chart
 autocorrelation = go.Figure()
 
+## scatter plot
+temp_demand_correlation = go.Figure()
+
 app.layout = html.Div(children=[
     html.H1(id = "heading", children="Solar power dashboard"),
     html.P(id ="active_dataset", children=convert_to_message(current_selection)),
@@ -174,7 +178,8 @@ app.layout = html.Div(children=[
         html.Label(children = "Select the Years:"),
         dcc.Checklist( id = "year_selector", options = [
             {"label": "ALL", "value":"ALL"}
-        ], value=["ALL"])
+        ], value=["ALL"]),
+        html.Button(id = "submit", type = "submit", children = "Refresh!")
     ], style = {"border" : "1px solid black"}
     ),
     dcc.Graph(id = "hour_demand", figure=hour_demand),
@@ -182,25 +187,31 @@ app.layout = html.Div(children=[
     dcc.Graph(id = "year_demand", figure=year_demand),
     dcc.Graph(id = "month_hour_heatmap",figure = month_hour_heatmap),
     dcc.Graph(id = "location_correlation",figure = location_correlation),
-    dcc.Graph(id = "autocorrelation", figure = autocorrelation)
-
+    dcc.Graph(id = "autocorrelation", figure = autocorrelation),
+    dcc.Graph(id = "temp_demand_correlation", figure = temp_demand_correlation)
 ])
 
 
 @app.callback(
-    output = {"location_selector_options":Output(component_id="location_selector", component_property="options"),
-            "location_selector_value":Output(component_id="location_selector", component_property="value"),
-            "year_selector_options":Output(component_id="year_selector", component_property="options"),
-            "year_selector_value":Output(component_id="year_selector", component_property="value"),
-            "active_dataset":Output(component_id="active_dataset", component_property="children")
+    output = {
+        "location_selector_options":Output(component_id="location_selector", component_property="options"),
+        "location_selector_value":Output(component_id="location_selector", component_property="value"),
+        "year_selector_options":Output(component_id="year_selector", component_property="options"),
+        "year_selector_value":Output(component_id="year_selector", component_property="value"),
+        "active_dataset":Output(component_id="active_dataset", component_property="children")
     },
     inputs ={
-        "selected_dataset":Input(component_id="data_selector", component_property="value"),
-        "selected_locations":Input(component_id="location_selector", component_property="value"),
-        "selected_years":Input(component_id="year_selector", component_property="value")
+        "button":Input(component_id="submit", component_property="n_clicks")
+    },
+    state = {
+        "selected_locations":State(component_id="location_selector", component_property="value"),
+        "selected_dataset":State(component_id="data_selector", component_property="value"),
+        "selected_years":State(component_id="year_selector", component_property="value"),
     })
 
-def load_new_datasset(selected_dataset, selected_locations, selected_years):
+
+def load_new_datasset(button, selected_dataset, selected_locations, selected_years):
+    print(button)
     global dataFrame
     global current_selection
 
@@ -266,16 +277,6 @@ def load_new_datasset(selected_dataset, selected_locations, selected_years):
             "active_dataset": convert_to_message(current_selection)
         }
 
-    
-    # dataFrame = dataFrames[selected_dataset]
-
-    # current_selection["dataset"] = selected_dataset
-    # current_selection["locations"] = dataFrame.Location.unique()
-    # current_selection["years"] = dataFrame.Year.unique()
-
-
-
-    # print(current_selection)
 
     return current_selection
 
@@ -362,7 +363,13 @@ def update_dataset(selected_dataset):
             a = dataFrame.loc[dataFrame.Location.isin([locations[i]])].sort_values(by = ["Year", "Month", "Day", "Hour"])["Demand"]
             b = dataFrame.loc[dataFrame.Location.isin([locations[j]])].sort_values(by = ["Year", "Month", "Day", "Hour"])["Demand"]
             
-            corrs[i][j] = np.corrcoef(a, b)[0, 1]
+            t = np.corrcoef(a, b)
+            
+            if len(t) == 1:
+                corrs[i][j] = t
+            else:
+                corrs[i][j] = t[0][1]
+
             corrs[j][i] = corrs[i][j]
 
     location_correlation = px.imshow(corrs, color_continuous_scale="Bluered")
@@ -383,15 +390,31 @@ def update_dataset(selected_dataset):
         a = dataFrame.loc[dataFrame.Location.isin([locations[i]])].sort_values(by = ["Year", "Month", "Day", "Hour"])
         
         a = a["Demand"]
-        # a = a[:8736]
-        # corrs[i] = np.correlate(a, a, mode = "full")[len(a)//2:len(a)//2 + 24]
-        corrs[i] = np.correlate(a, a, mode = "full")[-24*8:]
-        
+
+        t = np.correlate(a, a, mode = "full")
+        corrs[i] = t[len(t)//2: 201 + len(t)//2][:]
         corrs[i] /= max(corrs[i])
-        
-        
-        temp = temp.add_trace(go.Scatter(y = corrs[i], x = [i for i in range(24*8)],
+ 
+        temp = temp.add_trace(go.Scatter(y = corrs[i], x = [i for i in range(201)],
             mode = "lines+markers", name = locations[i]))
+
+    return temp
+
+
+@app.callback(
+    Output(component_id="temp_demand_correlation", component_property="figure"),
+    Input(component_id="active_dataset", component_property="children"))
+def update_dataset(selected_dataset):
+    locations = dataFrame.Location.unique()
+    temp = go.Figure()
+
+    t = dataFrame.sample(n = 500*len(locations))
+    t.reset_index()
+
+    for i in range(len(locations)):
+        sel = t.loc[t.Location.isin([locations[i]])]
+        temp = temp.add_trace(go.Scatter(y = sel["Temperature"], x = sel["Demand"],
+            mode = "markers", name = locations[i]))
 
     return temp
 

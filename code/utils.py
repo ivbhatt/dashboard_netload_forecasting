@@ -1,4 +1,5 @@
 import numpy as np
+from dash import html
 
 class bcolors:
     HEADER = '\033[95m'
@@ -40,10 +41,14 @@ def print_warn(*args, **kwargs):
     print(*args, **kwargs)
 
 def convert_to_message(status):
-    result = "Dataset Selected:" + str(status["dataset"]) + "<br>"
-    result +="Locations Selected:" + ",".join(status["locations"]) + "<br>"
-    result +="Years Selected:" + ",".join([str(i) for i in status["years"]]) + "<br>"
-    
+    result = []
+    result.append("Dataset Selected:" + str(status["dataset"]))
+    result.append(html.Br())
+    result.append("Locations Selected:" + ",".join(status["locations"]))
+    result.append(html.Br())
+    result.append("Years Selected:" + ",".join([str(i) for i in status["years"]]))
+    result.append(html.Br())
+    print(result)
     return result
 
 def normalize(arr):
