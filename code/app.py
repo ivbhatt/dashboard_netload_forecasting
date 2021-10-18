@@ -1,4 +1,5 @@
 import os, sys
+from re import M
 from dash.dcc.Checklist import Checklist
 from dash.dcc.RadioItems import RadioItems
 from dash.dependencies import Input, Output, State
@@ -15,17 +16,20 @@ from pandas.core.frame import DataFrame
 import plotly.graph_objects as go
 import plotly.express as px
 
-from utils import print_info, print_warn, convert_to_message, normalize
+from utils import print_info, print_warn, convert_to_message
+from utils import normalize, load_dataset, DATA_PATH
+
+
+
+BOOTSTRAP_JS = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"   ## Bootstrap5 JS
+BOOTSTRAP_CSS = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"       ## Bootstrap5 CSS
+CUSTOM_CSS = "styles.css"                                                                        ## Custom CSS
 
 current_selection = {
     "dataset" : "S1",
     "locations" : ["ALL"],
     "years" : ["ALL"]
 }
-
-app = dash.Dash(__name__)
-
-DATA_PATH = os.path.join("..", "data")
 
 datasets = os.listdir(DATA_PATH)
 if len(datasets) != 8:
@@ -34,67 +38,16 @@ print_info("Datasets:", datasets)
 
 
 
-def load_dataset(dataset):
-    dataFrame = pd.DataFrame(columns=["Dataset", "Location", "Year", "Month", "Day", "Weekday", "Hour","Demand", "Temperature"])
-
-    for root, dirs, files in os.walk(os.path.join(DATA_PATH, dataset, "data_cleaned")):
-        print_info("Working on dataset:", dataset)
-        if "Date.csv" in files:
-            date = pd.read_csv(os.path.join(root, "Date.csv"))
-
-            month_series = date["Month"]
-
-            curr_year = 1
-            year_series = [0 for i in month_series]
-
-            for i in range(len(month_series)-1):
-                if month_series[i+1] >= month_series[i]:
-                    year_series[i] += curr_year
-                else:
-                    year_series[i] += curr_year
-                    curr_year+=1
-
-            year_series[-1] += curr_year
-
-            for file in files:
-                if file != "Date.csv":
-                    print_info("Working on dataset:", dataset," location:", file.split(".")[0])
-
-                    t = pd.read_csv(os.path.join(root, file))
-                    
-                    if "Demand" in t.columns:
-                        temp_df = pd.DataFrame(data = t["Demand"])
-                    else:
-                        temp_df = pd.DataFrame(data = t["Net"])
-                        temp_df["Demand"] = temp_df["Net"]
-                        temp_df.drop(columns=["Net"])
-
-
-                    temp_df["Dataset"] = dataset
-                    temp_df["Location"] = file.split(".")[0]
-                    temp_df["Year"] = year_series
-                    temp_df["Month"] = month_series
-                    temp_df["Day"] = date["Day"]
-                    temp_df["Hour"] = date["Hour"]
-                    temp_df["Weekday"] = date["Weekday"]
-                    temp_df["Temperature"] = t["Temperature"]
-                    
-
-                    dataFrame = pd.concat([dataFrame, temp_df])
-
-        else:
-            temp_df = pd.read_csv(os.path.join(root, files[0]))[["Month","Day","Weekday","Hour","Demand", "Temperature"]]
-            temp_df["Dataset"] = dataset
-            temp_df["Location"] = "ALL"
-            temp_df["Year"] = "ALL"
-
-            dataFrame = pd.concat([dataFrame, temp_df])
-    return dataFrame
+### FOR DEBUG #########################################
+#  S1 and S4 are two good datasets that load fast
+#  Use only S1 and S4 when trying to add a new feature
 
 dataFrames = {}
-for dataset in ["S1", "S4"]:
-# for dataset in datasets:
+# for dataset in ["S1", "S4"]:
+#     dataFrames[dataset] = load_dataset(dataset)
+for dataset in datasets:
     dataFrames[dataset] = load_dataset(dataset)
+#######################################################
 
 
 dataFrame = dataFrames["S1"]
@@ -149,6 +102,7 @@ year_demand.update_layout(boxmode="group")
 month_hour_heatmap_data = np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].median()).reshape(12,24)
 month_hour_heatmap = px.imshow(normalize(month_hour_heatmap_data), color_continuous_scale="Bluered")
 location_correlation = px.imshow(np.array([1]).reshape(1,1), color_continuous_scale="Bluered")
+location_correlation.layout.height = 500
 
 ## line chart
 autocorrelation = go.Figure()
@@ -156,10 +110,21 @@ autocorrelation = go.Figure()
 ## scatter plot
 temp_demand_correlation = go.Figure()
 
-app.layout = html.Div(children=[
-    html.H1(id = "heading", children="Solar power dashboard"),
-    html.P(id ="active_dataset", children=convert_to_message(current_selection)),
-    html.Div(id = "selector", children = [
+app = dash.Dash(__name__, external_stylesheets=[BOOTSTRAP_CSS,], external_scripts=[BOOTSTRAP_JS])
+
+app.layout = html.Div(id = "main-block", className="container", children=[
+    html.Div(id = "heading-block", className = "container", children = [
+        html.H1(id = "heading", children="Solar power dashboard")
+    ]),
+    
+    html.Div(id = "status-block", className = "container", children = [
+        html.P(id ="active_dataset", children=
+            convert_to_message(current_selection)
+        ),
+    ]),
+
+    html.Div(id = "selector", className = "container",
+    style = {"border" : "1px solid black"}, children = [
         html.Label(children = "Select the dataset:"),
         dcc.RadioItems(id = "data_selector", options = [
             {"label":"S1", "value":"S1"},
@@ -171,24 +136,44 @@ app.layout = html.Div(children=[
             {"label":"L3", "value":"L3"},
             {"label":"L4", "value":"L4"},
         ], value = "S1"),
-        html.Label(children = "Select the Location:"),
+        html.Label("Select the Location:"),
         dcc.Checklist( id = "location_selector", options = [
             {"label": "ALL", "value":"ALL"}
         ], value=["ALL"]),
-        html.Label(children = "Select the Years:"),
+        html.Label("Select the Years:"),
         dcc.Checklist( id = "year_selector", options = [
             {"label": "ALL", "value":"ALL"}
         ], value=["ALL"]),
-        html.Button(id = "submit", type = "submit", children = "Refresh!")
-    ], style = {"border" : "1px solid black"}
-    ),
-    dcc.Graph(id = "hour_demand", figure=hour_demand),
-    dcc.Graph(id = "month_demand", figure=month_demand),
-    dcc.Graph(id = "year_demand", figure=year_demand),
-    dcc.Graph(id = "month_hour_heatmap",figure = month_hour_heatmap),
-    dcc.Graph(id = "location_correlation",figure = location_correlation),
-    dcc.Graph(id = "autocorrelation", figure = autocorrelation),
-    dcc.Graph(id = "temp_demand_correlation", figure = temp_demand_correlation)
+        html.Button(id = "submit", type = "submit", 
+        className = "btn btn-primary", children = "Refresh!")
+    ]),
+    html.Div(id = "hour_demand-block", className = "container", children = [
+        dcc.Graph(id = "hour_demand", figure=hour_demand)
+    ]),
+    html.Div(id = "month_demand-block", className = "container", children = [
+        dcc.Graph(id = "month_demand", figure=month_demand)
+    ]),
+    html.Div(id = "year_demand-block", className = "container", children = [
+        dcc.Graph(id = "year_demand", figure=year_demand)
+    ]),
+    html.Div(id = "month_hour_heatmap-block", className = "container", children = [
+        dcc.Graph(id = "month_hour_heatmap",figure = month_hour_heatmap)
+    ]),
+    html.Div(id = "location_correlation-block", className = "container", children = [
+        dcc.Graph(id = "location_correlation",figure = location_correlation)
+    ]),
+    html.Div(id = "autocorrelation-block", className = "container", children = [
+        dcc.Graph(id = "autocorrelation", figure = autocorrelation)
+    ]),
+    html.Div(id = "temp_demand_correlation-block", className = "container", children = [
+        dcc.Graph(id = "temp_demand_correlation", figure = temp_demand_correlation)
+    ]),
+    html.Div(id = "footer-block", children = [
+        html.P(children = [
+            html.Br(),
+            "Footer"
+        ])
+    ])
 ])
 
 
@@ -296,7 +281,15 @@ def update_dataset(selected_dataset):
                                 lowerfence= summarized["min"][0], upperfence= summarized["max"][0]
     ))
 
-    hour_demand.update_layout(boxmode="group")
+
+    hour_demand.update_layout(
+        boxmode="group",
+        title="Demand vs Time-of-Day",
+        xaxis_title="Hour of Day",
+        yaxis_title = "Demand"
+    )
+
+    
 
     return hour_demand
 
@@ -316,7 +309,17 @@ def update_dataset(selected_dataset):
                                 lowerfence= summarized["min"][0], upperfence= summarized["max"][0]
     ))
 
-    month_demand.update_layout(boxmode="group")
+    month_demand.update_layout(
+        boxmode="group",
+        title="Demand vs Time-of-Year",
+        xaxis_title="Month",
+        xaxis = {
+            "tickmode" : "array",
+            "tickvals" : [i for i in range(12)],
+            "ticktext" : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        },
+        yaxis_title = "Demand"
+        )
     return month_demand
 
 @app.callback(
@@ -335,7 +338,12 @@ def update_dataset(selected_dataset):
                                 lowerfence= summarized["min"][0], upperfence= summarized["max"][0]
     ))
 
-    year_demand.update_layout(boxmode="group")
+    year_demand.update_layout(
+        boxmode="group",
+        title = "Demand over the years",
+        xaxis_title="Year",
+        yaxis_title = "Demand"
+        )
     return year_demand
 
 @app.callback(
@@ -343,8 +351,19 @@ def update_dataset(selected_dataset):
     Input(component_id="active_dataset", component_property="children"))
 def update_dataset(selected_dataset):
     month_hour_heatmap_data = np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].median()).reshape(12,24)
-    month_hour_heatmap = px.imshow(normalize(month_hour_heatmap_data), color_continuous_scale="Bluered")
-    month_hour_heatmap.update_layout()
+    month_hour_heatmap = px.imshow(normalize(month_hour_heatmap_data), color_continuous_scale="Bluered", 
+    labels = {"color": "Correlation-Coefficient"})
+    month_hour_heatmap.update_layout(
+        xaxis_title="Time-of-Day",
+        yaxis = {
+            "tickmode" : "array",
+            "tickvals" : [i for i in range(12)],
+            "ticktext" : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        },
+        yaxis_title = "Month",
+        title = "Demand Month-Hour Signature"
+
+    )
     return month_hour_heatmap
 
 @app.callback(
@@ -372,7 +391,16 @@ def update_dataset(selected_dataset):
 
             corrs[j][i] = corrs[i][j]
 
-    location_correlation = px.imshow(corrs, color_continuous_scale="Bluered")
+    location_correlation = px.imshow(corrs, color_continuous_scale="Bluered",
+    labels = {"x" : "Location", "y": "Location", "color":"Correlation-Coefficient"},
+    x = current_selection["locations"],
+    y = current_selection["locations"],
+    title = "Correlation between Locations"
+    )
+
+    # location_correlation.update_xaxes(side = "top")
+    
+
     return location_correlation
 
 
@@ -398,6 +426,12 @@ def update_dataset(selected_dataset):
         temp = temp.add_trace(go.Scatter(y = corrs[i], x = [i for i in range(201)],
             mode = "lines+markers", name = locations[i]))
 
+    temp.update_layout(
+        title = "Autocorrelation on Demand",
+        xaxis_title="Time-lag",
+        yaxis_title = "Correlation-coefficient"
+    )
+
     return temp
 
 
@@ -409,12 +443,23 @@ def update_dataset(selected_dataset):
     temp = go.Figure()
 
     t = dataFrame.sample(n = 500*len(locations))
+
+    t["Temperature"] = normalize(np.array(t["Temperature"]))
+    t["Demand"] = normalize(np.array(t["Demand"]))
+
     t.reset_index()
 
     for i in range(len(locations)):
         sel = t.loc[t.Location.isin([locations[i]])]
         temp = temp.add_trace(go.Scatter(y = sel["Temperature"], x = sel["Demand"],
             mode = "markers", name = locations[i]))
+
+
+    temp.update_layout(
+        title = "Demand vs Temperature",
+        xaxis_title="Demand (Normalized)",
+        yaxis_title = "Temperature (Normalized)"
+    )
 
     return temp
 

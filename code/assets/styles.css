@@ -1,0 +1,52 @@
+#heading-block{
+    grid-area: heading;
+}
+#selector{
+    grid-area: selector;
+}
+#statuc-block{
+    grid-area: status;
+}
+#hour_demand-block{
+    grid-area: hour_demand;
+}
+#year_demand-block{
+    grid-area: year_demand;
+}
+#month_demand-block{
+    grid-area: month_demand;
+}
+#month_hour_heatmap-block{
+    grid-area: month_hour_heatmap;
+}
+#location_correlation-block{
+    grid-area: location_correlation;
+
+}
+#temp_demand_correlation-block{
+    grid-area: temp_demand_correlation;
+
+}
+#autocorrelation-block{
+    grid-area: autocorrelation;
+}
+
+#footer-block{
+    grid-area: footer;
+}
+
+#main-block{
+    display: grid;
+    grid-template-columns: 33% 34% 33%;
+    grid-template-rows: 5% 10% 20% 20% 20% 20% 5%;
+    gap: 0px, 0px;
+
+    grid-template-areas: 
+    "heading heading heading"
+    "selector selector status"
+    "hour_demand hour_demand hour_demand"
+    "year_demand month_demand month_demand"
+    "month_hour_heatmap month_hour_heatmap location_correlation"
+    "temp_demand_correlation autocorrelation autocorrelation"
+    "footer footer footer"    
+}
