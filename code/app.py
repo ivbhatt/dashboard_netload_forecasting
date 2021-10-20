@@ -136,6 +136,9 @@ app.layout = html.Div(id = "main-block", className="container", children=[
     ]),
     
     html.Div(id = "status-block", className = "container", children = [
+        html.P(className = "alert alert-warning", children = [
+            "S3 and L3 are large datasets and it takes more time to load them."
+        ]),
         html.P(id ="active_dataset", children=
             convert_to_message(current_selection)
         ),
@@ -189,7 +192,9 @@ app.layout = html.Div(id = "main-block", className="container", children=[
     html.Div(id = "footer-block", children = [
         html.P(children = [
             html.Br(),
-            "Footer"
+            "Built with dash-plotly",
+            html.Br(),
+            "Built at NC State University, Raleigh"
         ])
     ])
 ])
@@ -310,7 +315,7 @@ def update_hour_demand(selected_dataset):
         boxmode="group",
         title="Demand vs Time-of-Day",
         xaxis_title="Hour of Day",
-        yaxis_title = "Demand"
+        yaxis_title = "Demand (MW)"
     )
 
     
@@ -347,7 +352,7 @@ def update_month_demand(selected_dataset):
             "tickvals" : [i for i in range(12)],
             "ticktext" : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         },
-        yaxis_title = "Demand"
+        yaxis_title = "Demand (MW)"
         )
     return month_demand
 
@@ -375,7 +380,7 @@ def update_year_demand(selected_dataset):
         boxmode="group",
         title = "Demand over the years",
         xaxis_title="Year",
-        yaxis_title = "Demand"
+        yaxis_title = "Demand (MW)"
         )
     return year_demand
 
@@ -389,8 +394,8 @@ def update_month_hour_heatmap(selected_dataset):
     month_hour_heatmap_data = np.array(dataFrame.groupby(["Month", "Hour"])["Demand"].median()).reshape(12,24)
     
     # Adding labels and title
-    month_hour_heatmap = px.imshow(normalize(month_hour_heatmap_data), color_continuous_scale="Bluered", 
-    labels = {"color": "Correlation-Coefficient"})
+    month_hour_heatmap = px.imshow(month_hour_heatmap_data, color_continuous_scale="Bluered", 
+    labels = {"color": "Demand (MW)"})
     
     month_hour_heatmap.update_layout(
         xaxis_title="Time-of-Day",
@@ -475,7 +480,7 @@ def update_autocorrelation(selected_dataset):
     # Adding labels and title
     temp.update_layout(
         title = "Autocorrelation on Demand",
-        xaxis_title="Time-lag",
+        xaxis_title="Time-lag (Hours)",
         yaxis_title = "Correlation-coefficient"
     )
 
@@ -491,8 +496,8 @@ def update_temp_demand_correlation(selected_dataset):
 
     t = dataFrame.sample(n = 500*len(locations))
 
-    t["Temperature"] = normalize(np.array(t["Temperature"]))
-    t["Demand"] = normalize(np.array(t["Demand"]))
+    t["Temperature"] = np.array(t["Temperature"])
+    t["Demand"] = np.array(t["Demand"])
 
     t.reset_index()
 
@@ -504,8 +509,8 @@ def update_temp_demand_correlation(selected_dataset):
     # Adding labels and title
     temp.update_layout(
         title = "Demand vs Temperature",
-        xaxis_title="Demand (Normalized)",
-        yaxis_title = "Temperature (Normalized)"
+        xaxis_title="Demand (MW)",
+        yaxis_title = "Temperature (Celsius-scale)"
     )
     return temp
 

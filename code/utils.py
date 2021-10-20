@@ -35,6 +35,12 @@ def warn(func):
 
 DATA_PATH = os.path.join("..", "data")
 
+
+
+def farenheit_2_celcius(series):
+    return (series - 32)*5/9    
+
+
 def load_dataset(dataset):
     dataFrame = pd.DataFrame(columns=["Dataset", "Location", "Year", "Month", "Day", "Weekday", "Hour","Demand", "Temperature"])
 
@@ -68,7 +74,7 @@ def load_dataset(dataset):
                     else:
                         temp_df = pd.DataFrame(data = t["Net"])
                         temp_df["Demand"] = temp_df["Net"]
-                        temp_df.drop(columns=["Net"])
+                        temp_df.drop(columns=["Net"], inplace = True)
 
 
                     temp_df["Dataset"] = dataset
@@ -80,6 +86,15 @@ def load_dataset(dataset):
                     temp_df["Weekday"] = date["Weekday"]
                     temp_df["Temperature"] = t["Temperature"]
                     
+                    # print(dataset)
+                    # if dataset in ["S1", "S2"]:
+                    #     temp = temp_df["Demand"] / 1000 
+                    #     print(temp.head())
+                    #     temp_df.drop(columns=["Demand"], inplace=True) 
+                    #     print(temp.head())
+                    #     temp_df["Demand"] = temp[:]
+                    #     print(temp.head())
+                        
 
                     dataFrame = pd.concat([dataFrame, temp_df])
 
@@ -89,6 +104,16 @@ def load_dataset(dataset):
             temp_df["Location"] = "ALL"
             temp_df["Year"] = "ALL"
 
+
+            if dataset in ["S1", "S2"]:
+                temp = temp_df["Demand"] / 1000 
+                temp_df.drop(columns=["Demand"], inplace=True) 
+                temp_df["Demand"] = temp[:]
+
+                temp = farenheit_2_celcius(temp_df["Temperature"])
+                temp_df.drop(columns=["Temperature"], inplace=True) 
+                temp_df["Temperature"] = temp[:]
+            
             dataFrame = pd.concat([dataFrame, temp_df])
     return dataFrame
 
