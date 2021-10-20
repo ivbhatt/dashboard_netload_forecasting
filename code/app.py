@@ -439,9 +439,9 @@ def update_location_correlation(selected_dataset):
     labels = {"x" : "Location", "y": "Location", "color":"Correlation-Coefficient"},
     x = current_selection["locations"],
     y = current_selection["locations"],
-    title = "Correlation between Locations"
     )
-    
+
+    location_correlation.update_layout(title = "Correlation between Locations")    
 
     return location_correlation
 
