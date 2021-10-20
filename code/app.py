@@ -23,6 +23,9 @@ import pandas as pd
 from utils import print_info, print_warn, convert_to_message
 from utils import normalize, load_dataset, DATA_PATH
 
+# production server
+from waitress import serve
+
 
 ## constants
 BOOTSTRAP_JS = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"   ## Bootstrap5 JS
@@ -507,5 +510,4 @@ def update_temp_demand_correlation(selected_dataset):
     return temp
 
 if __name__ == "__main__":
-    from waitress import serve
-    serve(app.server, host="0.0.0.0", port=8080)
+    serve(app.server, host="0.0.0.0", port=8050)
