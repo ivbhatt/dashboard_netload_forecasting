@@ -1,45 +1,92 @@
+
+p{
+    margin: 10px;
+}
+.container{
+    padding-top: 10px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    padding-right: 10px;    
+}
+
+
 #heading-block{
     grid-area: heading;
+    background-color: snow;
+
+    border-style: solid;
+    border-color: firebrick;
+    border-width: 10px;
 }
 #selector{
     grid-area: selector;
+    background-color: whitesmoke;
+
+    border-style: solid;
+    border-color: slategray;
+    border-width: 10px;
+
 }
-#statuc-block{
+#status-block{
     grid-area: status;
+    background-color: whitesmoke;    
+    border-style: solid;
+    border-color: slategray;
+    border-width: 10px;
+
 }
 #hour_demand-block{
     grid-area: hour_demand;
+    background-color: gray;
+    
 }
 #year_demand-block{
     grid-area: year_demand;
+    background-color: gray;
+    
 }
 #month_demand-block{
     grid-area: month_demand;
+    background-color: gray;
+    
 }
 #month_hour_heatmap-block{
     grid-area: month_hour_heatmap;
+    background-color: gray;
+    
 }
 #location_correlation-block{
     grid-area: location_correlation;
-
+    background-color: gray;
+    
 }
 #temp_demand_correlation-block{
     grid-area: temp_demand_correlation;
+    background-color: gray;
+    
 
 }
 #autocorrelation-block{
     grid-area: autocorrelation;
+    background-color: gray;
+    
 }
 
 #footer-block{
     grid-area: footer;
+
+    background-color:snow;
+    border-style: solid;
+    border-color: firebrick;
+    border-width: 10px;
+
 }
 
 #main-block{
     display: grid;
     grid-template-columns: 33% 34% 33%;
     grid-template-rows: 5% 10% 20% 20% 20% 20% 5%;
-    gap: 0px, 0px;
+    gap: 10px 10px;
 
     grid-template-areas: 
     "heading heading heading"
@@ -49,4 +96,8 @@
     "month_hour_heatmap month_hour_heatmap location_correlation"
     "temp_demand_correlation autocorrelation autocorrelation"
     "footer footer footer"    
+}
+
+body{
+    background-color:floralwhite;
 }

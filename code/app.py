@@ -114,7 +114,6 @@ month_hour_heatmap_data = np.array(dataFrame.groupby(["Month", "Hour"])["Demand"
 month_hour_heatmap = px.imshow(normalize(month_hour_heatmap_data), color_continuous_scale="Bluered")
 
 location_correlation = px.imshow(np.array([1]).reshape(1,1), color_continuous_scale="Bluered")
-location_correlation.layout.height = 500
 ############################################
 
 ## line chart ##############################
@@ -132,7 +131,7 @@ app = dash.Dash(__name__, external_stylesheets=[BOOTSTRAP_CSS,], external_script
 ## This is where the "html" layout is written
 app.layout = html.Div(id = "main-block", className="container", children=[
     html.Div(id = "heading-block", className = "container", children = [
-        html.H1(id = "heading", children="Solar power dashboard")
+        html.H1(id = "heading", children="Demand-Temperature Data Visualization Dashboard")
     ]),
     
     html.Div(id = "status-block", className = "container", children = [
@@ -145,29 +144,29 @@ app.layout = html.Div(id = "main-block", className="container", children=[
     ]),
 
     html.Div(id = "selector", className = "container",
-    style = {"border" : "1px solid black"}, children = [
-        html.Label(children = "Select the dataset:"),
-        dcc.RadioItems(id = "data_selector", options = [
-            {"label":"S1", "value":"S1"},
-            {"label":"S2", "value":"S2"},
-            {"label":"S3", "value":"S3"},
-            {"label":"S4", "value":"S4"},
-            {"label":"L1", "value":"L1"},
-            {"label":"L2", "value":"L2"},
-            {"label":"L3", "value":"L3"},
-            {"label":"L4", "value":"L4"},
-        ], value = "S1"),
-        html.Label("Select the Location:"),
-        dcc.Checklist( id = "location_selector", options = [
-            {"label": "ALL", "value":"ALL"}
-        ], value=["ALL"]),
-        html.Label("Select the Years:"),
-        dcc.Checklist( id = "year_selector", options = [
-            {"label": "ALL", "value":"ALL"}
-        ], value=["ALL"]),
-        html.Button(id = "submit", type = "submit", 
-        className = "btn btn-primary", children = "Refresh!")
-    ]),
+        children = [
+            html.Label(children = "Select the dataset:"),
+            dcc.RadioItems(id = "data_selector", options = [
+                {"label":"S1", "value":"S1"},
+                {"label":"S2", "value":"S2"},
+                {"label":"S3", "value":"S3"},
+                {"label":"S4", "value":"S4"},
+                {"label":"L1", "value":"L1"},
+                {"label":"L2", "value":"L2"},
+                {"label":"L3", "value":"L3"},
+                {"label":"L4", "value":"L4"},
+            ], value = "S1"),
+            html.Label("Select the Location:"),
+            dcc.Checklist( id = "location_selector", options = [
+                {"label": "ALL", "value":"ALL"}
+            ], value=["ALL"]),
+            html.Label("Select the Years:"),
+            dcc.Checklist( id = "year_selector", options = [
+                {"label": "ALL", "value":"ALL"}
+            ], value=["ALL"]),
+            html.Button(id = "submit", type = "submit", 
+            className = "btn btn-primary", children = "Refresh!")
+        ]),
     html.Div(id = "hour_demand-block", className = "container", children = [
         dcc.Graph(id = "hour_demand", figure=hour_demand)
     ]),
@@ -315,7 +314,8 @@ def update_hour_demand(selected_dataset):
         boxmode="group",
         title="Demand vs Time-of-Day",
         xaxis_title="Hour of Day",
-        yaxis_title = "Demand (MW)"
+        yaxis_title = "Demand (MW)",
+        paper_bgcolor = "lightgrey"
     )
 
     
@@ -352,7 +352,8 @@ def update_month_demand(selected_dataset):
             "tickvals" : [i for i in range(12)],
             "ticktext" : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         },
-        yaxis_title = "Demand (MW)"
+        yaxis_title = "Demand (MW)",
+        paper_bgcolor = "lightgrey"
         )
     return month_demand
 
@@ -380,7 +381,8 @@ def update_year_demand(selected_dataset):
         boxmode="group",
         title = "Demand over the years",
         xaxis_title="Year",
-        yaxis_title = "Demand (MW)"
+        yaxis_title = "Demand (MW)",
+        paper_bgcolor = "lightgrey"
         )
     return year_demand
 
@@ -405,7 +407,9 @@ def update_month_hour_heatmap(selected_dataset):
             "ticktext" : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         },
         yaxis_title = "Month",
-        title = "Demand Month-Hour Signature"
+        title = "Demand Month-Hour Signature",
+        paper_bgcolor = "lightgrey"
+
 
     )
     return month_hour_heatmap
@@ -446,7 +450,7 @@ def update_location_correlation(selected_dataset):
     y = current_selection["locations"],
     )
 
-    location_correlation.update_layout(title = "Correlation between Locations")    
+    location_correlation.update_layout(title = "Correlation between Locations", paper_bgcolor = "lightgrey")    
 
     return location_correlation
 
@@ -481,7 +485,8 @@ def update_autocorrelation(selected_dataset):
     temp.update_layout(
         title = "Autocorrelation on Demand",
         xaxis_title="Time-lag (Hours)",
-        yaxis_title = "Correlation-coefficient"
+        yaxis_title = "Correlation-coefficient",
+        paper_bgcolor = "lightgrey"
     )
 
     return temp
@@ -510,7 +515,8 @@ def update_temp_demand_correlation(selected_dataset):
     temp.update_layout(
         title = "Demand vs Temperature",
         xaxis_title="Demand (MW)",
-        yaxis_title = "Temperature (Celsius-scale)"
+        yaxis_title = "Temperature (Celsius-scale)",
+        paper_bgcolor = "lightgrey"
     )
     return temp
 
