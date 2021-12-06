@@ -119,6 +119,34 @@ def load_dataset(dataset):
 
 
 
+def load_scores(dataset):
+    print_info("Working on dataset:", dataset)
+    dataFrame = pd.DataFrame(columns=["Dataset", "Location", "Model", "Metric", "Value"])
+
+    
+    with open(os.path.join(DATA_PATH, dataset, "result", "Scores.csv"), "r") as scores_file:
+        
+        headers = scores_file.readline().split(",")
+        scores = scores_file.readline().split(",")
+
+        for (i, header) in enumerate(headers):
+            location = "ALL"
+            if " " in header:
+                location = header.split(" ")[0]
+            header = header.split(" ")[-1]
+
+            model = header.split("_")[0]
+            metric = header.split("_")[1]
+
+            value = round(scores[i], 2)
+            
+
+
+
+            
+        dataFrame = pd.concat([dataFrame, [dataset, location, model, metric, value]])
+    return dataFrame
+
 
 
 @info

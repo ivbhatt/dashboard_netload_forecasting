@@ -30,7 +30,7 @@ from waitress import serve
 ## constants
 BOOTSTRAP_JS = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"   ## Bootstrap5 JS
 BOOTSTRAP_CSS = "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"       ## Bootstrap5 CSS
-CUSTOM_CSS = "styles.css"                                                                        ## Custom CSS
+CUSTOM_CSS = "data_styles.css"                                                                        ## Custom CSS
 
 ## global variable to keep track of the current data selection
 current_selection = {
@@ -52,10 +52,10 @@ print_info("Datasets:", datasets)
 #  Use only S1 and S4 when trying to add a new feature
 
 dataFrames = {}
-# for dataset in ["S1", "S4"]:
-#     dataFrames[dataset] = load_dataset(dataset)
-for dataset in datasets:
+for dataset in ["S1", "S4"]:
     dataFrames[dataset] = load_dataset(dataset)
+# for dataset in datasets:
+#     dataFrames[dataset] = load_dataset(dataset)
 #######################################################
 
 # Select dataset S1 by default
@@ -130,6 +130,19 @@ app = dash.Dash(__name__, external_stylesheets=[BOOTSTRAP_CSS,], external_script
 
 ## This is where the "html" layout is written
 app.layout = html.Div(id = "main-block", className="container", children=[
+    html.Nav(id = "nav-bar", className="navbar navbar-expand-lg navbar-light bg-light", children = [
+        html.A(className="navbar-brand", children="Navigation"),
+        html.Ul(className="navbar-nav", children = [
+            html.Li(className="nav-item active", children = [
+                html.A(className="nav-link active", href = "http://localhost:8050", children="Data")    
+            ]),
+            html.Li(className="nav-item", children = [
+                html.A(className="nav-link", href = "http://localhost:8051", children="Results")    
+            ])
+
+        ])
+    ]),
+
     html.Div(id = "heading-block", className = "container", children = [
         html.H1(id = "heading", children="Demand-Temperature Data Visualization Dashboard")
     ]),

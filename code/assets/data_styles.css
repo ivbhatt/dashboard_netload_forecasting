@@ -4,9 +4,9 @@ p{
 }
 .container{
     padding-top: 10px;
-    padding-bottom: 5px;
-    padding-left: 10px;
-    padding-right: 10px;    
+    padding-bottom: 0px;
+    /* padding-left: 10px;
+    padding-right: 10px;     */
 }
 
 
@@ -85,10 +85,11 @@ p{
 #main-block{
     display: grid;
     grid-template-columns: 33% 34% 33%;
-    grid-template-rows: 5% 10% 20% 20% 20% 20% 5%;
+    grid-template-rows: 1% 4% 10% 20% 20% 20% 20% 5%;
     gap: 10px 10px;
 
     grid-template-areas: 
+    "nav-bar nav-bar nav-bar"
     "heading heading heading"
     "selector selector status"
     "hour_demand hour_demand hour_demand"
