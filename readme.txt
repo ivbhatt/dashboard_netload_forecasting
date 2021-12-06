@@ -2,7 +2,7 @@ Steps to create run(linux) :
 
 => Create venv and activate it
 $ python3 -m venv venv
-$ source venv bin/activate
+$ source venv/bin/activate
 
 => Install dependencies
 (venv)$ pip install -r requirements.txt
